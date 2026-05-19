@@ -434,7 +434,7 @@
         volumeSlider.addEventListener('input', (e) => {
             state.volume = parseFloat(e.target.value) / 100;
             volumeVal.innerText = `${e.target.value}%`;
-            if (masterGain) {
+            if (masterGain && state.isPlaying) {
                 // Smooth volume change to avoid clicking
                 masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.05);
             }
