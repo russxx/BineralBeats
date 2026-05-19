@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binaural Journey Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #042f2e;
+            color: #f0fdfa;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Custom range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #14b8a6;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid #14b8a6;
+            color: #14b8a6;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <main class="w-full max-w-2xl glass-panel rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold tracking-tight mb-2 text-brand-500">
+                <i class="fa-solid fa-wave-square mr-2"></i>Binaural Journey
+            </h1>
+            <p class="text-sm text-gray-300 mb-4">Brainwave entrainment generator</p>
+            
+            <div class="inline-flex items-center justify-center px-4 py-2 bg-amber-500/20 text-amber-300 rounded-full text-xs font-semibold border border-amber-500/30">
+                <i class="fa-solid fa-headphones mr-2"></i> Stereo Headphones Required
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex mb-6 border-b border-gray-600/50">
+            <button id="btnTabManual" class="flex-1 py-3 text-sm font-medium tab-active transition-colors" onclick="switchTab('manual')">
+                <i class="fa-solid fa-sliders mr-2"></i> Manual Mode
+            </button>
+            <button id="btnTabGuided" class="flex-1 py-3 text-sm font-medium text-gray-400 hover:text-gray-200 transition-colors" onclick="switchTab('guided')">
+                <i class="fa-solid fa-route mr-2"></i> Guided Journey
+            </button>
+        </div>
+
+        <!-- Manual Mode Content -->
+        <div id="tabManual" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium mb-2 text-gray-300">Target Brainwave State</label>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <button class="state-btn py-3 rounded-lg text-sm font-semibold bg-gray-700 hover:bg-brand-600 active:scale-95 transition-all" data-freq="2">Delta (2Hz)</button>
+                    <button class="state-btn py-3 rounded-lg text-sm font-semibold bg-gray-700 hover:bg-brand-600 active:scale-95 transition-all" data-freq="6">Theta (6Hz)</button>
+                    <button class="state-btn py-3 rounded-lg text-sm font-semibold bg-brand-600 active:scale-95 transition-all" data-freq="10">Alpha (10Hz)</button>
+                    <button class="state-btn py-3 rounded-lg text-sm font-semibold bg-gray-700 hover:bg-brand-600 active:scale-95 transition-all" data-freq="20">Beta (20Hz)</button>
+                    <button class="state-btn py-3 rounded-lg text-sm font-semibold bg-gray-700 hover:bg-brand-600 active:scale-95 transition-all col-span-2 md:col-span-1" data-freq="40">Gamma (40Hz)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guided Journey Content (Hidden by default) -->
+        <div id="tabGuided" class="space-y-6 hidden">
+            <div>
+                <label class="block text-sm font-medium mb-2 text-gray-300">Select Journey</label>
+                <select id="journeySelect" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500">
+                    <option value="sleep">Deep Sleep Guide (Beta 15Hz ➔ Delta 2Hz)</option>
+                    <option value="relax">Deep Relaxation (Alpha 12Hz ➔ Theta 5Hz)</option>
+                    <option value="focus">Laser Focus (Theta 7Hz ➔ Gamma 40Hz)</option>
+                </select>
+            </div>
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-300">Transition Time (Getting there)</label>
+                    <span id="transitionVal" class="text-sm font-bold text-brand-400">10 min</span>
+                </div>
+                <input type="range" id="transitionSlider" min="5" max="45" value="10" step="1">
+            </div>
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-300">Target State Duration (Staying there)</label>
+                    <span id="holdVal" class="text-sm font-bold text-brand-400">20 min</span>
+                </div>
+                <input type="range" id="holdSlider" min="1" max="120" value="20" step="1">
+            </div>
+            
+            <!-- Journey Progress (Only visible when journey is active) -->
+            <div id="journeyProgressContainer" class="hidden mt-4 bg-gray-800 rounded-lg p-4 border border-gray-600">
+                <div class="flex justify-between text-xs mb-2">
+                    <span class="text-gray-400">Journey Progress</span>
+                    <span id="journeyTimeRemaining" class="text-brand-400 font-mono">15:00</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-1.5">
+                    <div id="journeyProgressBar" class="bg-brand-500 h-1.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shared Global Controls -->
+        <div class="mt-8 pt-6 border-t border-gray-600/50 space-y-6">
+            
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-300">Base Carrier Tone</label>
+                    <span id="baseFreqVal" class="text-sm font-bold text-brand-400">150 Hz</span>
+                </div>
+                <input type="range" id="baseFreqSlider" min="80" max="400" value="150" step="1">
+                <p class="text-xs text-gray-400 mt-1">Adjust this if the pitch is uncomfortable. The effect remains the same.</p>
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-300">Master Volume</label>
+                    <span id="volumeVal" class="text-sm font-bold text-brand-400">50%</span>
+                </div>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50" step="1">
+            </div>
+        </div>
+
+        <!-- Readout & Playback -->
+        <div class="mt-8 flex flex-col items-center">
+            
+            <div class="text-center mb-6">
+                <p class="text-sm text-gray-400 uppercase tracking-widest mb-1">Current Beat Frequency</p>
+                <div class="text-5xl font-light font-mono text-white tracking-tighter shadow-brand flex items-center justify-center gap-2">
+                    <span id="activeBeatDisplay">10.0</span> <span class="text-2xl text-brand-500">Hz</span>
+                </div>
+            </div>
+
+            <canvas id="visualizer" width="400" height="80" class="w-full max-w-md h-20 rounded-lg bg-gray-900/50 mb-6"></canvas>
+
+            <button id="playBtn" class="w-20 h-20 rounded-full bg-brand-500 hover:bg-brand-400 active:scale-95 text-white flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(20,184,166,0.4)] transition-all transform">
+                <i class="fa-solid fa-play ml-1"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // --- State Management ---
+        let state = {
+            isPlaying: false,
+            mode: 'manual', // 'manual' or 'guided'
+            baseFreq: 150,
+            targetBeat: 10,
+            volume: 0.5,
+            
+            // Guided Journey Specifics
+            journeyActive: false,
+            journeyStartBeat: 15,
+            journeyEndBeat: 2,
+            journeyTransitionMs: 10 * 60 * 1000,
+            journeyHoldMs: 20 * 60 * 1000,
+            journeyStartTime: 0
+        };
+
+        // --- Web Audio API Variables ---
+        let audioCtx;
+        let masterGain;
+        let oscLeft;
+        let oscRight;
+        let panLeft;
+        let panRight;
+
+        // --- DOM Elements ---
+        const playBtn = document.getElementById('playBtn');
+        const baseFreqSlider = document.getElementById('baseFreqSlider');
+        const baseFreqVal = document.getElementById('baseFreqVal');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeVal = document.getElementById('volumeVal');
+        const activeBeatDisplay = document.getElementById('activeBeatDisplay');
+        
+        // Guided elements
+        const transitionSlider = document.getElementById('transitionSlider');
+        const transitionVal = document.getElementById('transitionVal');
+        const holdSlider = document.getElementById('holdSlider');
+        const holdVal = document.getElementById('holdVal');
+        const journeySelect = document.getElementById('journeySelect');
+        const journeyProgressContainer = document.getElementById('journeyProgressContainer');
+        const journeyProgressBar = document.getElementById('journeyProgressBar');
+        const journeyTimeRemaining = document.getElementById('journeyTimeRemaining');
+
+        // Canvas
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        let animationId;
+
+        // --- Audio Engine ---
+        function initAudio() {
+            if (audioCtx) return; // Already initialized
+            
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = state.volume;
+            masterGain.connect(audioCtx.destination);
+
+            // Left Ear Oscillator
+            oscLeft = audioCtx.createOscillator();
+            panLeft = audioCtx.createStereoPanner();
+            panLeft.pan.value = -1; // Hard left
+            oscLeft.connect(panLeft);
+            panLeft.connect(masterGain);
+
+            // Right Ear Oscillator
+            oscRight = audioCtx.createOscillator();
+            panRight = audioCtx.createStereoPanner();
+            panRight.pan.value = 1; // Hard right
+            oscRight.connect(panRight);
+            panRight.connect(masterGain);
+
+            // Set initial frequencies
+            updateFrequencies(true); // immediate update
+
+            oscLeft.start();
+            oscRight.start();
+        }
+
+        function updateFrequencies(immediate = true) {
+            if (!audioCtx) return;
+
+            // Always update base frequency immediately
+            oscLeft.frequency.cancelScheduledValues(audioCtx.currentTime);
+            oscLeft.frequency.setValueAtTime(state.baseFreq, audioCtx.currentTime);
+
+            // Cancel any previously scheduled ramps on the right oscillator
+            oscRight.frequency.cancelScheduledValues(audioCtx.currentTime);
+
+            if (state.mode === 'manual' || !state.journeyActive) {
+                // Manual mode: static beat difference
+                const targetRightFreq = state.baseFreq + state.targetBeat;
+                if (immediate) {
+                    oscRight.frequency.setValueAtTime(targetRightFreq, audioCtx.currentTime);
+                } else {
+                    // Smooth transition to new manual state (0.5s glide)
+                    oscRight.frequency.linearRampToValueAtTime(targetRightFreq, audioCtx.currentTime + 0.5);
+                }
+            } else if (state.mode === 'guided' && state.journeyActive) {
+                // Guided Journey logic using Web Audio API scheduling
+                const rightStartFreq = state.baseFreq + state.journeyStartBeat;
+                const rightEndFreq = state.baseFreq + state.journeyEndBeat;
+                const transitionSeconds = state.journeyTransitionMs / 1000;
+
+                // Set start value right now
+                oscRight.frequency.setValueAtTime(rightStartFreq, audioCtx.currentTime);
+                // Schedule ramp to end value over transition duration
+                oscRight.frequency.linearRampToValueAtTime(rightEndFreq, audioCtx.currentTime + transitionSeconds);
+                // The frequency naturally holds at rightEndFreq after the ramp finishes
+            }
+        }
+
+        function togglePlay() {
+            if (!audioCtx) {
+                initAudio();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            state.isPlaying = !state.isPlaying;
+
+            if (state.isPlaying) {
+                masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.1); // Fade in
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                playBtn.classList.replace('bg-brand-500', 'bg-amber-500');
+                playBtn.classList.replace('hover:bg-brand-400', 'hover:bg-amber-400');
+                playBtn.classList.replace('shadow-[0_0_20px_rgba(20,184,166,0.4)]', 'shadow-[0_0_20px_rgba(245,158,11,0.4)]');
+                
+                if (state.mode === 'guided') {
+                    startJourney();
+                }
+                
+                drawVisualizer();
+                requestAnimationFrame(updateUI);
+            } else {
+                masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); // Fade out
+                playBtn.innerHTML = '<i class="fa-solid fa-play ml-1"></i>';
+                playBtn.classList.replace('bg-amber-500', 'bg-brand-500');
+                playBtn.classList.replace('hover:bg-amber-400', 'hover:bg-brand-400');
+                playBtn.classList.replace('shadow-[0_0_20px_rgba(245,158,11,0.4)]', 'shadow-[0_0_20px_rgba(20,184,166,0.4)]');
+                cancelAnimationFrame(animationId);
+                
+                if (state.mode === 'guided') {
+                    stopJourney(); // Pause journey progress
+                }
+            }
+        }
+
+        // UI Loop (runs every frame to update numbers and progress bars)
+        function updateUI() {
+            if (!state.isPlaying) return;
+
+            let currentVisualBeat = state.targetBeat;
+
+            if (state.mode === 'guided' && state.journeyActive) {
+                const now = Date.now();
+                const elapsed = now - state.journeyStartTime;
+                const totalDurationMs = state.journeyTransitionMs + state.journeyHoldMs;
+                let progress = elapsed / totalDurationMs;
+
+                if (progress >= 1) {
+                    progress = 1;
+                    stopJourney(); // Journey complete
+                }
+
+                // Calculate exact current beat for UI display
+                if (elapsed < state.journeyTransitionMs) {
+                    // Transition phase
+                    const transitionProgress = elapsed / state.journeyTransitionMs;
+                    currentVisualBeat = state.journeyStartBeat + (state.journeyEndBeat - state.journeyStartBeat) * transitionProgress;
+                } else {
+                    // Hold phase
+                    currentVisualBeat = state.journeyEndBeat;
+                }
+                
+                // Update Progress Bar
+                journeyProgressBar.style.width = `${progress * 100}%`;
+                
+                // Update Time Remaining
+                const remainingSeconds = Math.max(0, Math.ceil((totalDurationMs - elapsed) / 1000));
+                const mins = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+                const secs = (remainingSeconds % 60).toString().padStart(2, '0');
+                journeyTimeRemaining.innerText = `${mins}:${secs}`;
+            }
+
+            activeBeatDisplay.innerText = currentVisualBeat.toFixed(1);
+            
+            if (state.isPlaying) {
+                requestAnimationFrame(updateUI);
+            }
+        }
+
+        // Simple Sine Wave Visualizer
+        function drawVisualizer() {
+            if (!state.isPlaying) return;
+            animationId = requestAnimationFrame(drawVisualizer);
+
+            const width = canvas.width;
+            const height = canvas.height;
+            canvasCtx.clearRect(0, 0, width, height);
+
+            const time = Date.now() / 1000; // time in seconds
+            
+            // To make the visualizer look cool without actually calculating audio bytes,
+            // we simulate an interference pattern based on the current beat frequency.
+            // Get the current beat frequency from the UI text to keep it synchronized.
+            const beatFreq = parseFloat(activeBeatDisplay.innerText) || 10;
+            
+            // Draw a composite waveform
+            canvasCtx.beginPath();
+            canvasCtx.strokeStyle = '#14b8a6';
+            canvasCtx.lineWidth = 2;
+
+            for (let x = 0; x < width; x++) {
+                const normX = x / width;
+                // High frequency carrier (visual simulation)
+                const carrier = Math.sin((normX * 50) + (time * 10)); 
+                // Low frequency envelope (the "beat")
+                const envelope = Math.sin((normX * Math.PI) + (time * beatFreq * Math.PI)); 
+                
+                const y = height / 2 + (carrier * envelope * (height / 2.5));
+
+                if (x === 0) canvasCtx.moveTo(x, y);
+                else canvasCtx.lineTo(x, y);
+            }
+            canvasCtx.stroke();
+        }
+
+        // --- Event Listeners ---
+
+        playBtn.addEventListener('click', togglePlay);
+
+        baseFreqSlider.addEventListener('input', (e) => {
+            state.baseFreq = parseFloat(e.target.value);
+            baseFreqVal.innerText = `${state.baseFreq} Hz`;
+            if (state.isPlaying) updateFrequencies(true);
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            state.volume = parseFloat(e.target.value) / 100;
+            volumeVal.innerText = `${e.target.value}%`;
+            if (masterGain) {
+                // Smooth volume change to avoid clicking
+                masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.05);
+            }
+        });
+
+        // Manual State Buttons
+        document.querySelectorAll('.state-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Reset styling
+                document.querySelectorAll('.state-btn').forEach(b => {
+                    b.classList.remove('bg-brand-600');
+                    b.classList.add('bg-gray-700');
+                });
+                // Set active
+                e.target.classList.remove('bg-gray-700');
+                e.target.classList.add('bg-brand-600');
+
+                state.targetBeat = parseFloat(e.target.dataset.freq);
+                activeBeatDisplay.innerText = state.targetBeat.toFixed(1);
+
+                if (state.isPlaying && state.mode === 'manual') {
+                    updateFrequencies(false); // Smooth glide to new frequency
+                }
+            });
+        });
+
+        // Journey Sliders
+        transitionSlider.addEventListener('input', (e) => {
+            transitionVal.innerText = `${e.target.value} min`;
+            if (state.journeyActive) { stopJourney(); startJourney(); }
+        });
+
+        holdSlider.addEventListener('input', (e) => {
+            holdVal.innerText = `${e.target.value} min`;
+            if (state.journeyActive) { stopJourney(); startJourney(); }
+        });
+
+        // Tab Switching
+        window.switchTab = function(mode) {
+            state.mode = mode;
+            
+            const tabManual = document.getElementById('tabManual');
+            const tabGuided = document.getElementById('tabGuided');
+            const btnManual = document.getElementById('btnTabManual');
+            const btnGuided = document.getElementById('btnTabGuided');
+
+            if (mode === 'manual') {
+                tabManual.classList.remove('hidden');
+                tabGuided.classList.add('hidden');
+                
+                btnManual.classList.add('tab-active');
+                btnManual.classList.remove('text-gray-400');
+                btnGuided.classList.remove('tab-active');
+                btnGuided.classList.add('text-gray-400');
+
+                stopJourney();
+                if (state.isPlaying) updateFrequencies(false);
+
+            } else {
+                tabManual.classList.add('hidden');
+                tabGuided.classList.remove('hidden');
+                
+                btnGuided.classList.add('tab-active');
+                btnGuided.classList.remove('text-gray-400');
+                btnManual.classList.remove('tab-active');
+                btnManual.classList.add('text-gray-400');
+
+                if (state.isPlaying) startJourney();
+            }
+        };
+
+        // --- Journey Execution Logic ---
+        function startJourney() {
+            const journeyType = journeySelect.value;
+            const transitionMins = parseFloat(transitionSlider.value);
+            const holdMins = parseFloat(holdSlider.value);
+            
+            state.journeyTransitionMs = transitionMins * 60 * 1000;
+            state.journeyHoldMs = holdMins * 60 * 1000;
+            state.journeyStartTime = Date.now();
+            state.journeyActive = true;
+
+            // Define journeys
+            if (journeyType === 'sleep') {
+                state.journeyStartBeat = 15; // Beta
+                state.journeyEndBeat = 2;    // Delta
+            } else if (journeyType === 'relax') {
+                state.journeyStartBeat = 12; // Alpha
+                state.journeyEndBeat = 5;    // Theta
+            } else if (journeyType === 'focus') {
+                state.journeyStartBeat = 7;  // Theta
+                state.journeyEndBeat = 40;   // Gamma
+            }
+
+            journeyProgressContainer.classList.remove('hidden');
+            updateFrequencies(true);
+        }
+
+        function stopJourney() {
+            state.journeyActive = false;
+            journeyProgressContainer.classList.add('hidden');
+            // Revert back to manual target beat if stopped
+            if (state.isPlaying) {
+                 updateFrequencies(true);
+            }
+        }
+
+        journeySelect.addEventListener('change', () => {
+            if (state.journeyActive) {
+                startJourney(); // Restart with new settings
+            }
+        });
+
+        // Initialize Canvas with a static line before play
+        canvasCtx.beginPath();
+        canvasCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+        canvasCtx.moveTo(0, canvas.height/2);
+        canvasCtx.lineTo(canvas.width, canvas.height/2);
+        canvasCtx.stroke();
+
+    </script>
+</body>
+</html>
