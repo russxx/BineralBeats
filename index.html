@@ -320,6 +320,8 @@
                 
                 if (state.mode === 'guided') {
                     startJourney();
+                } else {
+                    updateFrequencies(true); // FIX: Instantly apply any changes made while paused
                 }
                 
                 drawVisualizer();
