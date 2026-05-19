@@ -426,6 +426,7 @@
             state.baseFreq = parseFloat(e.target.value);
             baseFreqVal.innerText = `${state.baseFreq} Hz`;
             if (state.isPlaying) updateFrequencies(true);
+            saveSettings();
         });
 
         volumeSlider.addEventListener('input', (e) => {
@@ -435,6 +436,7 @@
                 // Smooth volume change to avoid clicking
                 masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.05);
             }
+            saveSettings();
         });
 
         // Manual State Buttons
@@ -455,6 +457,7 @@
                 if (state.isPlaying && state.mode === 'manual') {
                     updateFrequencies(false); // Smooth glide to new frequency
                 }
+                saveSettings();
             });
         });
 
@@ -462,15 +465,17 @@
         transitionSlider.addEventListener('input', (e) => {
             transitionVal.innerText = `${e.target.value} min`;
             if (state.journeyActive) { stopJourney(); startJourney(); }
+            saveSettings();
         });
 
         holdSlider.addEventListener('input', (e) => {
             holdVal.innerText = `${e.target.value} min`;
             if (state.journeyActive) { stopJourney(); startJourney(); }
+            saveSettings();
         });
 
         // Tab Switching
-        window.switchTab = function(mode) {
+        window.switchTab = function(mode, skipSave = false) {
             state.mode = mode;
             
             const tabManual = document.getElementById('tabManual');
@@ -501,6 +506,7 @@
 
                 if (state.isPlaying) startJourney();
             }
+            if (!skipSave) saveSettings();
         };
 
         // --- Journey Execution Logic ---
@@ -543,7 +549,73 @@
             if (state.journeyActive) {
                 startJourney(); // Restart with new settings
             }
+            saveSettings();
         });
+
+        // --- Local Storage (Save/Load Settings) ---
+        function saveSettings() {
+            const settings = {
+                volume: state.volume,
+                baseFreq: state.baseFreq,
+                targetBeat: state.targetBeat,
+                mode: state.mode,
+                journeyType: journeySelect.value,
+                transitionMins: transitionSlider.value,
+                holdMins: holdSlider.value
+            };
+            localStorage.setItem('binauralSettings', JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('binauralSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Apply loaded globals
+                if (settings.volume !== undefined) {
+                    state.volume = settings.volume;
+                    volumeSlider.value = state.volume * 100;
+                    volumeVal.innerText = `${volumeSlider.value}%`;
+                }
+                
+                if (settings.baseFreq !== undefined) {
+                    state.baseFreq = settings.baseFreq;
+                    baseFreqSlider.value = state.baseFreq;
+                    baseFreqVal.innerText = `${state.baseFreq} Hz`;
+                }
+                
+                if (settings.targetBeat !== undefined) {
+                    state.targetBeat = settings.targetBeat;
+                    activeBeatDisplay.innerText = state.targetBeat.toFixed(1);
+                    // Update manual button UI
+                    document.querySelectorAll('.state-btn').forEach(btn => {
+                        if (parseFloat(btn.dataset.freq) === state.targetBeat) {
+                            btn.classList.add('bg-brand-600');
+                            btn.classList.remove('bg-gray-700');
+                        } else {
+                            btn.classList.remove('bg-brand-600');
+                            btn.classList.add('bg-gray-700');
+                        }
+                    });
+                }
+
+                // Apply loaded journey settings
+                if (settings.journeyType) journeySelect.value = settings.journeyType;
+                if (settings.transitionMins) {
+                    transitionSlider.value = settings.transitionMins;
+                    transitionVal.innerText = `${settings.transitionMins} min`;
+                }
+                if (settings.holdMins) {
+                    holdSlider.value = settings.holdMins;
+                    holdVal.innerText = `${settings.holdMins} min`;
+                }
+
+                // Apply loaded mode
+                if (settings.mode) {
+                    switchTab(settings.mode, true);
+                }
+            }
+        }
 
         // Initialize Canvas with a static line before play
         canvasCtx.beginPath();
@@ -551,6 +623,9 @@
         canvasCtx.moveTo(0, canvas.height/2);
         canvasCtx.lineTo(canvas.width, canvas.height/2);
         canvasCtx.stroke();
+
+        // Load saved settings on startup
+        loadSettings();
 
     </script>
 </body>
