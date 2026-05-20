@@ -34,8 +34,8 @@
 </head>
 <body class="bg-gray-900 text-white font-sans antialiased min-h-screen flex flex-col items-center p-4">
 
-    <!-- Tiny silent WAV file encoded in base64 to trick iOS into background playback -->
-    <audio id="ios-background-audio" loop playsinline src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
+    <!-- The audio src is now dynamically generated in JavaScript so iOS recognizes it as a long track -->
+    <audio id="ios-background-audio" loop playsinline preload="auto"></audio>
 
     <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-xl overflow-hidden mt-4">
         
@@ -165,17 +165,48 @@
 
         const iosBgAudio = document.getElementById('ios-background-audio');
 
+        // Dynamically creates a 60-second silent WAV file so iOS registers it as a real song
+        function setupBackgroundAudio() {
+            if (iosBgAudio.src) return; 
+            
+            const sampleRate = 8000;
+            const duration = 60; // 60 seconds
+            const numSamples = sampleRate * duration;
+            const buffer = new ArrayBuffer(44 + numSamples * 2);
+            const view = new DataView(buffer);
+            
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + numSamples * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); 
+            view.setUint16(20, 1, true); 
+            view.setUint16(22, 1, true); 
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true); 
+            view.setUint16(32, 2, true); 
+            view.setUint16(34, 16, true); 
+            writeString(36, 'data');
+            view.setUint32(40, numSamples * 2, true);
+
+            const blob = new Blob([buffer], { type: 'audio/wav' });
+            iosBgAudio.src = URL.createObjectURL(blob);
+            iosBgAudio.load();
+        }
+
         // --- iOS BULLETPROOF KEEPALIVE HACK ---
-        // Native HTML5 audio continues playing when the screen is locked.
-        // We use its continuous playback "ticks" to constantly check on the 
-        // Web Audio API engine and forcefully wake it up if iOS tries to suspend it!
         iosBgAudio.addEventListener('timeupdate', () => {
             if (state.isPlaying && audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
         });
 
-        // Secondary fallback when unlocking the phone
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible' && state.isPlaying && audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -210,6 +241,8 @@
         }
 
         function loadSettings() {
+            setupBackgroundAudio(); // Prime the silent audio for iOS Lock Screen
+
             try {
                 const saved = localStorage.getItem('binauralState');
                 if (saved) {
@@ -224,7 +257,6 @@
                 console.error("Could not load settings", e);
             }
             
-            // Sync UI to loaded state
             switchTab(state.mode, false);
             
             document.getElementById('slider-base').value = state.baseFreq;
@@ -263,17 +295,14 @@
                 const totalDurationSeconds = (state.journey.transitionMins + state.journey.holdMins) * 60;
 
                 if (!state.isPlaying || !audioCtx) {
-                    // Show starting point if paused or not started
                     displayBeat = journeyProfiles[state.journey.goal] ? journeyProfiles[state.journey.goal].startFreq : 0;
                     timerText = formatTime(totalDurationSeconds);
                     timerLabel = "Total Journey Time";
                 } else {
-                    // Calculate live progress during playback
                     const now = audioCtx.currentTime;
                     const elapsed = now - transitionStartTime;
                     let remaining = totalDurationSeconds - elapsed;
 
-                    // Stop automatically if time is up
                     if (remaining <= 0) {
                         remaining = 0;
                         if (state.isPlaying) {
@@ -296,7 +325,6 @@
                 }
             }
 
-            // Update UI elements
             const displayEl = document.getElementById('live-freq-display');
             const barEl = document.getElementById('live-freq-bar');
             const timerDisplayEl = document.getElementById('timer-display');
@@ -309,16 +337,14 @@
             if (barEl) {
                 let percent = (displayBeat / 40) * 100;
                 barEl.style.width = Math.min(percent, 100) + '%';
-                // Change bar color dynamically based on current brainwave state
-                if (displayBeat <= 4) barEl.className = "bg-indigo-500 h-full transition-all duration-75"; // Delta
-                else if (displayBeat <= 8) barEl.className = "bg-blue-400 h-full transition-all duration-75"; // Theta
-                else if (displayBeat <= 13) barEl.className = "bg-emerald-400 h-full transition-all duration-75"; // Alpha
-                else if (displayBeat <= 30) barEl.className = "bg-yellow-400 h-full transition-all duration-75"; // Beta
-                else barEl.className = "bg-red-400 h-full transition-all duration-75"; // Gamma
+                if (displayBeat <= 4) barEl.className = "bg-indigo-500 h-full transition-all duration-75"; 
+                else if (displayBeat <= 8) barEl.className = "bg-blue-400 h-full transition-all duration-75"; 
+                else if (displayBeat <= 13) barEl.className = "bg-emerald-400 h-full transition-all duration-75"; 
+                else if (displayBeat <= 30) barEl.className = "bg-yellow-400 h-full transition-all duration-75"; 
+                else barEl.className = "bg-red-400 h-full transition-all duration-75"; 
             }
 
             cancelAnimationFrame(animFrame);
-            // Only continuously loop the animation request if the audio is actively playing
             if (state.isPlaying) {
                 animFrame = requestAnimationFrame(updateVisualizerUI);
             }
@@ -344,12 +370,10 @@
             state.manual.targetFreq = freq;
             state.manual.targetName = name;
             
-            // Reset all buttons
             ['Delta', 'Theta', 'Alpha', 'Beta', 'Gamma'].forEach(btn => {
                 const el = document.getElementById('btn-' + btn);
                 if(el) el.className = 'py-3 rounded-lg bg-gray-700 text-sm font-medium transition active:scale-95';
             });
-            // Highlight selected
             const activeBtn = document.getElementById('btn-' + name);
             if(activeBtn) {
                 activeBtn.className = 'py-3 rounded-lg bg-blue-600 text-sm font-medium transition shadow-lg active:scale-95 ' + (name === 'Gamma' ? 'col-span-2 sm:col-span-1' : '');
@@ -432,12 +456,10 @@
             
             const now = audioCtx.currentTime;
 
-            // Left ear always plays the base carrier tone
             oscLeft.frequency.setTargetAtTime(state.baseFreq, now, 0.1);
 
-            // Right ear calculates the difference
             if (state.mode === 'manual') {
-                transitionStartTime = now; // Reset timer for fresh manual session
+                transitionStartTime = now; 
                 const rightFreq = state.baseFreq + state.manual.targetFreq;
                 oscRight.frequency.setTargetAtTime(rightFreq, now, 0.1);
                 
@@ -470,11 +492,13 @@
             if (!state.isPlaying) {
                 // PLAY
                 audioCtx.resume();
+                
+                // Start the 60-second native track to activate iOS Lock Screen player
                 iosBgAudio.play().catch(e => console.log("iOS bg play failed", e));
                 
                 applyFrequencies(); 
                 
-                masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.5); // Fade in
+                masterGain.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.5); 
                 state.isPlaying = true;
                 btn.innerText = "PAUSE";
                 btn.className = "w-full mt-8 bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 text-lg";
@@ -483,7 +507,7 @@
                 updateMediaSessionState('playing');
             } else {
                 // PAUSE
-                masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5); // Fade out
+                masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5); 
                 setTimeout(() => {
                     if(!state.isPlaying) {
                         iosBgAudio.pause(); 
