@@ -427,6 +427,11 @@
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContext();
 
+            // Link the 60-second silent HTML audio directly to the Web Audio Context.
+            // This binds the binaural math engine to the native lock screen player, forcing iOS to keep BOTH awake!
+            const source = audioCtx.createMediaElementSource(iosBgAudio);
+            source.connect(audioCtx.destination);
+
             masterGain = audioCtx.createGain();
             masterGain.gain.value = 0; // Start muted
             masterGain.connect(audioCtx.destination);
