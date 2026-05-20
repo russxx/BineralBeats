@@ -146,7 +146,6 @@
         let audioCtx;
         let oscLeft, oscRight;
         let masterGain;
-        let iosAudioSourceAttached = false; 
 
         // Visualizer State
         let animFrame;
@@ -165,6 +164,23 @@
         }
 
         const iosBgAudio = document.getElementById('ios-background-audio');
+
+        // --- iOS BULLETPROOF KEEPALIVE HACK ---
+        // Native HTML5 audio continues playing when the screen is locked.
+        // We use its continuous playback "ticks" to constantly check on the 
+        // Web Audio API engine and forcefully wake it up if iOS tries to suspend it!
+        iosBgAudio.addEventListener('timeupdate', () => {
+            if (state.isPlaying && audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+
+        // Secondary fallback when unlocking the phone
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'visible' && state.isPlaying && audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
 
         const state = {
             mode: 'manual', 
@@ -386,14 +402,6 @@
             
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContext();
-
-            // Link the silent HTML audio element to the Web Audio Context. 
-            // This forces iOS to keep the context running in the background.
-            if (!iosAudioSourceAttached) {
-                const source = audioCtx.createMediaElementSource(iosBgAudio);
-                source.connect(audioCtx.destination);
-                iosAudioSourceAttached = true;
-            }
 
             masterGain = audioCtx.createGain();
             masterGain.gain.value = 0; // Start muted
